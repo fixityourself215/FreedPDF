@@ -386,6 +386,7 @@ let drawState = null;
 let activePointers = new Map();
 let isPinching = false, pinchStartDist = 0, pinchStartScale = 1, pinchPreviewScale = null;
 let pendingImagePlacement = null;
+let pendingTextEdit = null;
 let theme = 'light';
 try{ theme = localStorage.getItem('folium-theme') || 'light'; }catch(e){}
 document.body.dataset.theme = theme;
@@ -593,6 +594,11 @@ function wireAnnotEl(inst, idx, el, kind){
     if(Math.abs(dx)>4||Math.abs(dy)>4){ moved=true; el.style.left=(startLeft+dx)+'px'; el.style.top=(startTop+dy)+'px'; }
   });
   el.addEventListener('pointerup', e=>{
+    if(pendingTextEdit && pendingTextEdit.el===el){
+      const pte=pendingTextEdit; pendingTextEdit=null;
+      enterTextEdit(inst, pte.idx, el);
+      return;
+    }
     if(!active) return; active=false;
     const realIdx = elIndex(inst, el);
     if(moved){
@@ -638,6 +644,7 @@ function deleteAction(inst, idx){
 }
 function enterTextEdit(inst, idx, el){
   snapshotBefore(inst);
+  const bar=el.querySelector('.annot-toolbar'); if(bar) bar.remove();
   el.contentEditable='true'; el.classList.add('editing'); el.focus();
   const range=document.createRange(); range.selectNodeContents(el); range.collapse(false);
   const sel=window.getSelection(); sel.removeAllRanges(); sel.addRange(range);
@@ -705,7 +712,7 @@ function onPageDown(inst,e){
     const idx=inst.actions.length-1;
     const el=inst._annotLayer.lastChild;
     selectAnnotEl(inst, idx, el, 'text');
-    setTimeout(()=>enterTextEdit(inst, idx, el), 30);
+    pendingTextEdit={inst, idx, el};
     return;
   }
   if(tool==='pen'||tool==='highlighter'){
@@ -737,6 +744,10 @@ function onPageUp(inst,e){
       redrawStrokes(inst);
     }
     drawState=null;
+  }
+  if(pendingTextEdit && pendingTextEdit.inst===inst){
+    const {idx,el}=pendingTextEdit; pendingTextEdit=null;
+    enterTextEdit(inst, idx, el);
   }
 }
 function eraseAtCanvasPoint(inst,cx,cy){
