@@ -1,3 +1,124 @@
+
+Claude finished the response
+Does my tool convert PDF to word?? thats what were missing hahah
+
+
+Assessed missing PDF-to-Word conversion feature and solution feasibility
+Assessed missing PDF-to-Word conversion feature and solution feasibility
+No — right now it only edits/creates PDFs, it doesn't touch Word docs at all. That's a fair gap to flag.
+
+Quick honest note before I build it: true "PDF → Word" conversion (where tables, columns, and formatting come out looking right in Word) is genuinely hard to do well even for paid tools like Adobe — they use heavy layout-reconstruction engines. What I can build for free, client-side, no server, is a solid version that:
+
+Pulls all the text out of the PDF (page by page)
+Reconstructs basic formatting — paragraphs, line breaks, bold/font-size where detectable
+Saves it as a real .docx file you can open and edit in Word
+It'll be great for text-heavy documents (contracts, forms, letters, reports). It won't perfectly preserve complex multi-column layouts, tables, or exact fonts — nothing free does that reliably, so I don't want to oversell it.
+
+Want me to add that as a new "Export to Word" option in the menu?
+
+Wait but you CAN build the thing I want.. you just said it would be hard aka I need premium plan lol
+
+
+Clarified misconception about premium tier and resolved gatekeeping concern
+Clarified misconception about premium tier and resolved gatekeeping concern
+No premium plan exists here — there's nothing to upsell you into, this is all one free file you already own. I wasn't hedging toward a paywall, I was being straight with you about a real technical ceiling: pixel-perfect PDF→Word conversion (tables, columns, exact fonts) is hard for everyone, including Adobe's paid version, because a PDF doesn't actually store "this is a table" — it stores where each letter sits on the page, and software has to guess the structure back out.
+
+That said — yes, I can absolutely build it into your tool right now, for free, running entirely in the browser like everything else. It'll produce a real, editable .docx file with your text, paragraphs, and basic formatting intact. It just won't be flawless on complex layouts, and I'd rather tell you that now than have you find out later and think it's broken.
+
+Want me to add it as a new "Export to Word" button in the menu?
+
+How did you do ALL this, and the add text part in new pdf is still broken?? how!??? You said it was fixed?
+
+
+Located problematic code and prepared verification before correction
+Located problematic code and prepared verification before correction
+Found it — real bug, not a repeat of the last one. Let me show you exactly what's wrong before fixing it.
+
+
+Identified two root causes blocking text editing functionality
+Identified two root causes blocking text editing functionality
+Now the bigger one — the delayed keyboard focus:
+
+
+Diagnosed iOS Safari keyboard bug, restructured text creation logic
+Diagnosed iOS Safari keyboard bug, restructured text creation logic
+Let me tighten this further — mobile Safari specifically wants the keyboard-focus call to happen on tap-release, not tap-down (that's exactly the pattern already used for editing existing text elsewhere in the file). I'll make new text creation match that:
+
+
+Diagnosed pointer event capture bug affecting desktop text annotation
+Diagnosed pointer event capture bug affecting desktop text annotation
+One more edge case — on desktop/mouse the release event can land on the new text box itself rather than the canvas. Let me make sure that path is covered too:
+
+
+Ran a command, viewed a file, edited a file
+Ran a command, viewed a file, edited a file
+Now let's re-verify the whole file still parses cleanly and everything's wired:
+
+
+Re-check syntax and confirm all pendingTextEdit references line up
+Re-check syntax and confirm all pendingTextEdit references line up
+All wired correctly, syntax is clean.
+
+
+Ran a command, read a file
+Ran a command, read a file
+Straight answer on why my last "fix" didn't fix this: I fixed a real but different bug last time — the index tracking got corrupted whenever a pen/highlighter stroke existed. That was legitimate and needed fixing, but it wasn't the thing you were actually hitting.
+
+This time I found the actual cause: when you tapped to place new text, the code was calling focus() on the text box 30 milliseconds later, inside a setTimeout. On phones, that tiny delay breaks the browser's rule that says "only pop the on-screen keyboard if focus happens immediately in direct response to your tap" — so the text box appeared, but the keyboard never came up, and typing did nothing. It's a well-known mobile web trap. I also found the delete button was getting planted inside the text box while you typed, which could scramble the cursor further.
+
+Fixed both: the keyboard-triggering focus now fires right on tap-release (matching how editing existing text already worked), and the delete button no longer lives inside the editable area while you're typing. Covered it for touch and mouse both.
+
+Same file, same link — since it's already index.html on your main branch:
+
+Go to your repo → click index.html
+Click the pencil icon (top right) to edit
+Select all the existing code, delete it, paste in this new version
+Scroll down, Commit changes
+Your live link updates automatically within ~30 seconds — no other steps needed
+Test it on your phone after that and tell me straight if it's still off — I'd rather you push back again than settle for something half-working.
+
+
+Folium
+Code · HTML 
+add "PDF TO WORD CONVERT"
+
+
+Architected PDF-to-Word export using docx library and text extraction
+Architected PDF-to-Word export using docx library and text extraction
+Now add the menu entry and the conversion function:
+
+
+Refined documentation and verified function declarations
+Refined documentation and verified function declarations
+Clean. Deploying it:
+
+
+Ran a command, read a file
+Ran a command, read a file
+Added it — Menu → "Export as Word (.docx)…". It pulls the actual text out of every page (reusing the same text-detection the Edit tool already uses), rebuilds it as real paragraphs with matched font sizes, and downloads a genuine .docx you can open and edit in Word — free, no server, runs in the browser same as everything else.
+
+Same honest caveat as before: it's built for text-heavy documents (contracts, letters, forms). It won't perfectly recreate tables, columns, or exact fonts — nothing free does. If a page is a scanned image with no real text layer, it'll flag that page and tell you to run OCR first, rather than silently giving you a blank page.
+
+To update your live site:
+
+Go to your repo → click index.html → pencil icon (edit)
+Select all, delete, paste in this new version
+Scroll down, Commit changes
+Live in ~30-60 seconds at the same URL
+Try converting a real PDF and check the Word doc opens clean — let me know if anything looks off.
+
+
+Folium
+Code · HTML 
+
+
+
+
+
+Claude is AI and can make mistakes. Please double-check responses.
+
+
+Folium · HTML
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -36,7 +157,7 @@ body{
 }
 button{font-family:inherit;}
 #app{position:fixed; inset:0; display:flex; flex-direction:column; background:var(--paper-dim);}
-
+ 
 /* ---------- Top bar ---------- */
 #topbar{
   height:calc(var(--topbar-h) + var(--safe-t)); padding-top:var(--safe-t);
@@ -54,7 +175,7 @@ button{font-family:inherit;}
 #docTitle b{font-size:14.5px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
 #docTitle span{font-size:11px; color:#AEB6C9;}
 .topbar-actions{display:flex; align-items:center; gap:2px; flex:none;}
-
+ 
 /* ---------- Empty state ---------- */
 #emptyState{
   flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:18px;
@@ -77,7 +198,7 @@ button{font-family:inherit;}
 .btn-danger{background:var(--danger); color:#fff;}
 .btn-sm{padding:8px 12px; font-size:13px; border-radius:9px;}
 [data-theme="dark"] #emptyState h1{color:var(--text);}
-
+ 
 /* ---------- Viewer ---------- */
 #viewer{
   flex:1; overflow-y:auto; overflow-x:hidden; -webkit-overflow-scrolling:touch;
@@ -109,7 +230,7 @@ button{font-family:inherit;}
 .annot-toolbar button svg{width:15px;height:15px;}
 .annot-toolbar button:active{background:rgba(255,255,255,0.15);}
 .resize-handle{position:absolute; width:16px; height:16px; right:-8px; bottom:-8px; background:var(--accent); border-radius:50%; border:2px solid #fff; touch-action:none;}
-
+ 
 /* ---------- Bottom toolbar ---------- */
 #bottombar{
   height:calc(var(--bottombar-h) + var(--safe-b)); padding-bottom:var(--safe-b); flex:none; background:var(--ink-900);
@@ -125,7 +246,7 @@ button{font-family:inherit;}
 .tool-btn.active{color:var(--accent);}
 .tool-btn .dot{width:4px;height:4px;border-radius:50%;background:var(--accent); opacity:0; margin-top:1px;}
 .tool-btn.active .dot{opacity:1;}
-
+ 
 /* ---------- Context bar (color/size) ---------- */
 #contextbar{
   position:absolute; left:8px; right:8px; bottom:calc(var(--bottombar-h) + var(--safe-b) + 8px);
@@ -138,7 +259,7 @@ button{font-family:inherit;}
 [data-theme="dark"] .swatch.selected{border-color:#fff;}
 #contextbar input[type=range]{width:90px; flex:none;}
 .ctx-label{font-size:11px; color:var(--text-dim); flex:none;}
-
+ 
 /* ---------- Sheets / Drawers ---------- */
 .backdrop{
   position:fixed; inset:0; background:rgba(10,14,24,0.5); opacity:0; pointer-events:none; transition:opacity .2s; z-index:40;
@@ -170,7 +291,7 @@ button{font-family:inherit;}
 .menu-item:active{background:var(--paper-dim);}
 .menu-item svg{width:19px;height:19px; flex:none; color:var(--text-dim);}
 .menu-sep{height:1px; background:var(--border); margin:8px 0;}
-
+ 
 /* ---------- Page manager list ---------- */
 .pm-toolbar{display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap;}
 .pm-list{display:flex; flex-direction:column; gap:10px;}
@@ -184,7 +305,7 @@ button{font-family:inherit;}
 .pm-actions button:active{background:var(--border);}
 .pm-actions svg{width:17px;height:17px;}
 .pm-check{width:20px; height:20px; flex:none; accent-color:var(--accent);}
-
+ 
 /* ---------- Misc ---------- */
 #toasts{position:fixed; left:0; right:0; bottom:calc(var(--bottombar-h) + var(--safe-b) + 14px); display:flex; flex-direction:column; align-items:center; gap:8px; z-index:60; pointer-events:none;}
 .toast{background:var(--ink-900); color:#fff; padding:10px 16px; border-radius:10px; font-size:13.5px; box-shadow:var(--shadow); max-width:88%; text-align:center;}
@@ -200,7 +321,7 @@ input[type=file]{display:none;}
 </head>
 <body data-theme="light">
 <div id="app">
-
+ 
   <!-- TOP BAR -->
   <div id="topbar">
     <button class="icon-btn" id="btnMenu" title="Menu"></button>
@@ -211,7 +332,7 @@ input[type=file]{display:none;}
       <button class="icon-btn" id="btnSave" disabled></button>
     </div>
   </div>
-
+ 
   <!-- EMPTY STATE -->
   <div id="emptyState">
     <div class="leaf-mark"></div>
@@ -222,41 +343,41 @@ input[type=file]{display:none;}
       <button class="btn btn-ghost" id="btnNewEmpty"></button>
     </div>
   </div>
-
+ 
   <!-- VIEWER -->
   <div id="viewer"></div>
-
+ 
   <!-- CONTEXT BAR (color/size) -->
   <div id="contextbar"></div>
-
+ 
   <!-- BOTTOM TOOLBAR -->
   <div id="bottombar"></div>
-
+ 
   <!-- TOASTS -->
   <div id="toasts"></div>
-
+ 
   <!-- LOADING -->
   <div id="loadingOverlay" class="hidden">
     <div class="spinner"></div>
     <div id="loadingText">Loading…</div>
   </div>
-
+ 
   <!-- BACKDROP -->
   <div class="backdrop" id="backdrop"></div>
-
+ 
   <!-- MENU DRAWER -->
   <div class="drawer" id="menuDrawer">
     <div class="drawer-head"><b>Folium</b><span>PDF viewer &amp; editor</span></div>
     <div class="drawer-body" id="menuBody"></div>
   </div>
-
+ 
   <!-- PAGE MANAGER SHEET -->
   <div class="sheet" id="pagesSheet">
     <div class="sheet-handle"></div>
     <div class="sheet-head"><h2>Pages</h2><button class="icon-btn" id="btnClosePages"></button></div>
     <div class="sheet-body" id="pagesBody"></div>
   </div>
-
+ 
   <!-- RENAME SHEET -->
   <div class="sheet" id="renameSheet">
     <div class="sheet-handle"></div>
@@ -268,7 +389,7 @@ input[type=file]{display:none;}
       </div>
     </div>
   </div>
-
+ 
   <!-- EDIT TEXT SHEET -->
   <div class="sheet" id="editTextSheet">
     <div class="sheet-handle"></div>
@@ -282,7 +403,7 @@ input[type=file]{display:none;}
       </div>
     </div>
   </div>
-
+ 
   <!-- OCR SHEET -->
   <div class="sheet" id="ocrSheet">
     <div class="sheet-handle"></div>
@@ -296,7 +417,7 @@ input[type=file]{display:none;}
       </div>
     </div>
   </div>
-
+ 
   <!-- ABOUT SHEET -->
   <div class="sheet" id="aboutSheet">
     <div class="sheet-handle"></div>
@@ -306,22 +427,23 @@ input[type=file]{display:none;}
       <p class="hint">Tools: pan to scroll · text to add new notes · Edit to tap existing text on the page and replace it in place · pen to draw · highlighter to mark · eraser to remove a stroke or annotation (tap it) · image to stamp a photo on the page. Pinch or use the buttons to zoom. Use Pages to reorder, rotate, delete, duplicate, or export a subset. Use the menu's "Make searchable (OCR)" on scanned PDFs to add selectable, searchable text.</p>
     </div>
   </div>
-
+ 
   <input type="file" id="fileOpenInput" accept="application/pdf">
   <input type="file" id="fileMergeInput" accept="application/pdf">
   <input type="file" id="fileImageInput" accept="image/*">
 </div>
-
+ 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.0.4/dist/tesseract.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.js"></script>
 <script>
 pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
 </script>
 <script>
 (function(){
 "use strict";
-
+ 
 /* ================= helpers ================= */
 const $ = (s,r)=> (r||document).querySelector(s);
 const $$ = (s,r)=> Array.from((r||document).querySelectorAll(s));
@@ -329,11 +451,11 @@ const viewer = $('#viewer');
 const fileOpenInput = $('#fileOpenInput');
 const fileMergeInput = $('#fileMergeInput');
 const fileImageInput = $('#fileImageInput');
-
+ 
 const styleTag = document.createElement('style');
 styleTag.textContent = '.annotLayer{pointer-events:none;} .annot-el{pointer-events:auto;} body.tool-draw .annot-el{pointer-events:none;}';
 document.head.appendChild(styleTag);
-
+ 
 /* ================= icons ================= */
 const ICONS = {
   menu:'<path d="M4 7h16M4 12h16M4 17h16"/>',
@@ -358,6 +480,7 @@ const ICONS = {
   pages:'<rect x="6" y="4" width="12" height="16" rx="1.5"/><rect x="3" y="7" width="12" height="16" rx="1.5" fill="var(--surface)"/>',
   rotate:'<path d="M4 12a8 8 0 1 1 2.6 5.9"/><path d="M4 17v-4h4"/>',
   ocr:'<rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 9h16M8 4v5"/><path d="M8 14h8M8 17h5"/>',
+  word:'<path d="M6 3h8l4 4v14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M14 3v4h4"/><path d="M7.5 12l1.4 6 1.6-4.5 1.6 4.5 1.4-6"/>',
   trash:'<path d="M5 7h14M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M7 7l1 13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1l1-13"/>',
   duplicate:'<rect x="8" y="8" width="12" height="12" rx="1.5"/><path d="M5 15V5.5A1.5 1.5 0 0 1 6.5 4H16"/>',
   up:'<path d="M6 15l6-6 6 6"/>',
@@ -367,7 +490,7 @@ const ICONS = {
 };
 function ICON(name){ return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">'+(ICONS[name]||'')+'</svg>'; }
 const LEAF_SVG = '<svg viewBox="0 0 64 64" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg"><rect width="64" height="64" rx="16" fill="var(--ink-900)"/><path d="M18 14h18l10 10v26a2 2 0 0 1-2 2H18a2 2 0 0 1-2-2V16a2 2 0 0 1 2-2z" fill="var(--paper)"/><path d="M36 14v10h10z" fill="var(--accent)"/></svg>';
-
+ 
 /* ================= state ================= */
 let sources = {};           // key -> {bytes, pdfjsDoc, name}
 let sourceCounter = 0;
@@ -390,9 +513,9 @@ let pendingTextEdit = null;
 let theme = 'light';
 try{ theme = localStorage.getItem('folium-theme') || 'light'; }catch(e){}
 document.body.dataset.theme = theme;
-
+ 
 function genId(){ return 'p'+Date.now().toString(36)+Math.random().toString(36).slice(2,8); }
-
+ 
 /* ================= toasts / loading ================= */
 function toast(msg){
   const t=document.createElement('div'); t.className='toast'; t.textContent=msg;
@@ -401,11 +524,11 @@ function toast(msg){
 }
 function showLoading(text){ $('#loadingText').textContent = text || 'Loading…'; $('#loadingOverlay').classList.remove('hidden'); }
 function hideLoading(){ $('#loadingOverlay').classList.add('hidden'); }
-
+ 
 /* ================= panels ================= */
 function showPanel(el){ $('#backdrop').classList.add('show'); el.classList.add('show'); }
 function hidePanels(){ $('#backdrop').classList.remove('show'); $$('.sheet.show,.drawer.show').forEach(e=>e.classList.remove('show')); }
-
+ 
 /* ================= coordinate math ================= */
 function fwd(viewport,x,y){ const m=viewport.transform; return {x:m[0]*x+m[2]*y+m[4], y:m[1]*x+m[3]*y+m[5]}; }
 function inv(viewport,cx,cy){
@@ -414,11 +537,11 @@ function inv(viewport,cx,cy){
   const y=(-m[1]*(cx-m[4]) + m[0]*(cy-m[5]))/det;
   return {x,y};
 }
-
+ 
 /* ================= file loading ================= */
 async function fileToBytes(file){ return new Uint8Array(await file.arrayBuffer()); }
 function newPageInstance(sourceKey, origIndex){ return {id:genId(), sourceKey, origIndex, rotation:0, actions:[]}; }
-
+ 
 async function loadMainFromBytes(bytes, name){
   showLoading('Opening PDF…');
   try{
@@ -468,17 +591,17 @@ async function mergeFile(file){
   }catch(e){ console.error(e); toast('Could not add that PDF.'); }
   hideLoading();
 }
-
+ 
 /* ================= rendering ================= */
 async function getPdfjsPage(inst){ return sources[inst.sourceKey].pdfjsDoc.getPage(inst.origIndex+1); }
-
+ 
 async function renderPage(inst){
   const pjsPage = await getPdfjsPage(inst);
   const base = pjsPage.rotate || 0;
   const total = (base + inst.rotation + 360) % 360;
   const viewport = pjsPage.getViewport({scale, rotation: total});
   inst._viewport = viewport;
-
+ 
   if(!inst._outerEl){
     const outer=document.createElement('div'); outer.className='page-outer';
     const inner=document.createElement('div'); inner.className='page-inner';
@@ -493,7 +616,7 @@ async function renderPage(inst){
     attachPageInteraction(inst);
     viewer.appendChild(outer);
   }
-
+ 
   const canvas=inst._canvas, strokeCanvas=inst._strokeCanvas, inner=inst._innerEl;
   const dpr = Math.min(window.devicePixelRatio||1, 2.5);
   canvas.width=Math.floor(viewport.width*dpr); canvas.height=Math.floor(viewport.height*dpr);
@@ -502,11 +625,11 @@ async function renderPage(inst){
   strokeCanvas.style.width=viewport.width+'px'; strokeCanvas.style.height=viewport.height+'px';
   inner.style.width=viewport.width+'px'; inner.style.height=viewport.height+'px';
   inst._annotLayer.style.width=viewport.width+'px'; inst._annotLayer.style.height=viewport.height+'px';
-
+ 
   const ctx=canvas.getContext('2d');
   ctx.setTransform(dpr,0,0,dpr,0,0);
   await pjsPage.render({canvasContext:ctx, viewport}).promise;
-
+ 
   redrawStrokes(inst);
   rebuildAnnotEls(inst);
   if(inst._badge) inst._badge.textContent='Page '+(pages.indexOf(inst)+1)+' of '+pages.length;
@@ -519,7 +642,7 @@ async function renderAll(){
 function reorderDom(){ pages.forEach(inst=>{ if(inst._outerEl) viewer.appendChild(inst._outerEl); }); updateBadges(); }
 function updateBadges(){ pages.forEach((inst,i)=>{ if(inst._badge) inst._badge.textContent='Page '+(i+1)+' of '+pages.length; }); }
 function updateDocSub(){ $('#docSubText').textContent = pages.length+' page'+(pages.length===1?'':'s'); }
-
+ 
 /* ================= strokes ================= */
 function drawStrokeAction(ctx, viewport, a){
   if(!a.points || a.points.length<1) return;
@@ -543,7 +666,7 @@ function redrawStrokes(inst, draft){
   inst.actions.forEach(a=>{ if(a.type==='stroke') drawStrokeAction(ctx, inst._viewport, a); else if(a.type==='redact') drawRedactAction(ctx, inst._viewport, a); });
   if(draft) drawStrokeAction(ctx, inst._viewport, draft);
 }
-
+ 
 /* ================= annotation DOM elements ================= */
 function rebuildAnnotEls(inst){
   inst._annotLayer.innerHTML='';
@@ -615,7 +738,7 @@ function wireAnnotEl(inst, idx, el, kind){
   });
 }
 function elIndex(inst, el){ return parseInt(el.dataset.aidx, 10); }
-
+ 
 function selectAnnotEl(inst, idx, el, kind){
   clearSelection();
   el.classList.add('selected');
@@ -687,7 +810,7 @@ function wireResizeHandle(inst, idx, wrap, handle){
     pushHistory(inst);
   });
 }
-
+ 
 /* ================= page-level pointer interaction ================= */
 function attachPageInteraction(inst){
   const el=inst._strokeCanvas;
@@ -697,7 +820,7 @@ function attachPageInteraction(inst){
   el.addEventListener('pointercancel', e=>onPageUp(inst,e));
 }
 function localPoint(inst,e){ const r=inst._strokeCanvas.getBoundingClientRect(); return {cx:e.clientX-r.left, cy:e.clientY-r.top}; }
-
+ 
 function onPageDown(inst,e){
   if(isPinching) return;
   clearSelection();
@@ -761,7 +884,7 @@ function eraseAtCanvasPoint(inst,cx,cy){
     }
   }
 }
-
+ 
 /* ================= edit existing text ================= */
 let editTextContext = null;
 async function getTextLinesForInst(inst){
@@ -842,7 +965,7 @@ function applyTextEdit(inst, line, newText){
   if(inst._textLines) inst._textLines=inst._textLines.filter(l=>l!==line);
   toast(newText && newText.trim() ? 'Text replaced.' : 'Text removed.');
 }
-
+ 
 /* ================= pinch zoom (viewer-level) ================= */
 viewer.addEventListener('pointerdown', e=>{
   activePointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
@@ -856,7 +979,7 @@ function endPointer(e){ activePointers.delete(e.pointerId); if(isPinching && act
 viewer.addEventListener('pointerup', endPointer);
 viewer.addEventListener('pointercancel', endPointer);
 viewer.addEventListener('pointerdown', e=>{ if(e.target===viewer) clearSelection(); });
-
+ 
 function startPinch(){
   isPinching=true;
   const pts=Array.from(activePointers.values());
@@ -877,7 +1000,7 @@ function endPinch(){
   if(pinchPreviewScale){ setScale(pinchPreviewScale); pinchPreviewScale=null; }
 }
 function setScale(s){ scale=Math.max(0.5, Math.min(4, s)); renderAll(); }
-
+ 
 /* ================= undo / redo ================= */
 function snapshotBefore(inst){ pendingSnapshot={pageId:inst.id, json:JSON.stringify(inst.actions)}; }
 function pushHistory(inst){
@@ -908,7 +1031,7 @@ function redo(){
   clearSelection(); redrawStrokes(inst); rebuildAnnotEls(inst);
   updateUndoRedoButtons();
 }
-
+ 
 /* ================= image insert ================= */
 function fileToDataUrl(file){ return new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=rej; r.readAsDataURL(file); }); }
 function imageDims(dataUrl){ return new Promise(res=>{ const img=new Image(); img.onload=()=>res({w:img.naturalWidth,h:img.naturalHeight}); img.src=dataUrl; }); }
@@ -929,7 +1052,7 @@ async function onImageFileChosen(e){
   }catch(err){ console.error(err); toast('Could not add that image.'); }
   e.target.value='';
 }
-
+ 
 /* ================= export ================= */
 function hexToRgb01(hex){
   const m=(hex||'#000000').replace('#','');
@@ -1016,7 +1139,43 @@ async function exportPdf(indices){
   }
   hideLoading();
 }
-
+ 
+/* ================= export to Word ================= */
+async function exportToWord(indices){
+  if(!indices || !indices.length) return;
+  if(typeof docx==='undefined'){ toast('Word export engine failed to load — check your internet connection and try again.'); return; }
+  showLoading('Converting to Word…');
+  try{
+    const { Document, Packer, Paragraph, TextRun, PageBreak } = docx;
+    const children=[];
+    for(let n=0;n<indices.length;n++){
+      const inst=pages[indices[n]];
+      const lines=await getTextLinesForInst(inst);
+      if(!lines.length){
+        children.push(new Paragraph({ children:[ new TextRun({ text:'[No extractable text on this page — it may be a scanned image. Try "Make searchable (OCR)" first, then re-export.', italics:true }) ] }));
+      } else {
+        lines.forEach(line=>{
+          const sizeHalfPts=Math.max(16, Math.min(96, Math.round((line.h||11)*2)));
+          children.push(new Paragraph({ children:[ new TextRun({ text: line.text, size: sizeHalfPts }) ] }));
+        });
+      }
+      if(n<indices.length-1) children.push(new Paragraph({ children:[ new PageBreak() ] }));
+    }
+    const doc=new Document({ sections:[{ children }] });
+    const blob=await Packer.toBlob(doc);
+    const name=docName.replace(/\.pdf$/i,'')+'.docx';
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a'); a.href=url; a.download=name;
+    document.body.appendChild(a); a.click();
+    setTimeout(()=>{ a.remove(); URL.revokeObjectURL(url); }, 1500);
+    toast('Saved '+name);
+  }catch(err){
+    console.error(err);
+    toast('Word conversion failed — please try again.');
+  }
+  hideLoading();
+}
+ 
 /* ================= page manager ================= */
 async function generateThumb(inst){
   const pjsPage=await getPdfjsPage(inst);
@@ -1091,7 +1250,7 @@ function deletePage(i){
   pages.splice(i,1);
   updateBadges(); renderPagesList(); updateDocSub();
 }
-
+ 
 /* ================= tools / UI wiring ================= */
 function setTool(id){
   tool=id; clearSelection(); updateToolButtons(); buildContextBar();
@@ -1166,7 +1325,7 @@ function buildContextBar(){
     }));
   }
 }
-
+ 
 /* ================= menu / drawer ================= */
 function buildMenu(){
   const body=$('#menuBody'); body.innerHTML='';
@@ -1178,6 +1337,7 @@ function buildMenu(){
     items.push({icon:'merge', label:'Add pages from another PDF…', action:()=>{ hidePanels(); fileMergeInput.click(); }});
     items.push({icon:'rename', label:'Rename document', action:()=>{ hidePanels(); openRenameSheet(); }});
     items.push({icon:'ocr', label:'Make searchable (OCR)…', action:()=>{ hidePanels(); showPanel($('#ocrSheet')); }});
+    items.push({icon:'word', label:'Export as Word (.docx)…', action:()=>{ hidePanels(); exportToWord(pages.map((_,i)=>i)); }});
   }
   items.push({sep:true});
   items.push({icon: theme==='dark'?'sun':'moon', label: theme==='dark'?'Light mode':'Dark mode', action:()=>{ toggleTheme(); buildMenu(); }});
@@ -1228,7 +1388,7 @@ function confirmRename(){
   if(v){ docName = /\.pdf$/i.test(v) ? v : v+'.pdf'; $('#docTitleText').textContent=docName; }
   hidePanels();
 }
-
+ 
 /* ================= doc mode / init ================= */
 function enterDocMode(){
   $('#emptyState').style.display='none';
@@ -1299,3 +1459,5 @@ init();
 </script>
 </body>
 </html>
+ 
+
