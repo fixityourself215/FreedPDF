@@ -230,7 +230,7 @@ input[type=file]{display:none;}
   <!-- TOP BAR -->
   <div id="topbar">
     <button class="icon-btn" id="btnMenu" title="Menu"></button>
-    <div id="docTitle"><b id="docTitleText">Folium</b><span id="docSubText">No document open</span></div>
+    <div id="docTitle"><b id="docTitleText">FREEDPDF - BY CF</b><span id="docSubText">No document open</span></div>
     <div class="topbar-actions">
       <button class="icon-btn" id="btnUndo" disabled></button>
       <button class="icon-btn" id="btnRedo" disabled></button>
@@ -276,7 +276,7 @@ input[type=file]{display:none;}
 
   <!-- MENU DRAWER -->
   <div class="drawer" id="menuDrawer">
-    <div class="drawer-head"><b>Folium</b><span>PDF viewer &amp; editor</span></div>
+    <div class="drawer-head"><b>FREEPDF BY CF</b><span>PDF viewer &amp; editor</span></div>
     <div class="drawer-body" id="menuBody"></div>
   </div>
 
@@ -330,9 +330,9 @@ input[type=file]{display:none;}
   <!-- ABOUT SHEET -->
   <div class="sheet" id="aboutSheet">
     <div class="sheet-handle"></div>
-    <div class="sheet-head"><h2>About Folium</h2><button class="icon-btn" id="btnCloseAbout"></button></div>
+    <div class="sheet-head"><h2>About FREEPDF - BY CF</h2><button class="icon-btn" id="btnCloseAbout"></button></div>
     <div class="sheet-body">
-      <p style="font-size:14px; line-height:1.6; margin-top:0;">Folium is a self-contained web app — everything runs on your device, nothing you open is uploaded anywhere.</p>
+      <p style="font-size:14px; line-height:1.6; margin-top:0;">FREEPDF BY CF is a self-contained web app — everything runs on your device, nothing you open is uploaded anywhere.</p>
       <p class="hint">Tools: pan to scroll · text to add new notes · Edit to tap existing text on the page and replace it in place · pen to draw · highlighter to mark · eraser to remove a stroke or annotation (tap it) · image to stamp a photo on the page. Pinch or use the buttons to zoom. Use Pages to reorder, rotate, delete, duplicate, or export a subset. Use the menu's "Make searchable (OCR)" on scanned PDFs to add selectable, searchable text.</p>
     </div>
   </div>
@@ -1301,7 +1301,7 @@ function buildMenu(){
   }
   items.push({sep:true});
   items.push({icon: theme==='dark'?'sun':'moon', label: theme==='dark'?'Light mode':'Dark mode', action:()=>{ toggleTheme(); buildMenu(); }});
-  items.push({icon:'help', label:'About Folium', action:()=>{ hidePanels(); showPanel($('#aboutSheet')); }});
+  items.push({icon:'help', label:'About FREEDPDF BY CF', action:()=>{ hidePanels(); showPanel($('#aboutSheet')); }});
   items.forEach(it=>{
     if(it.sep){ const s=document.createElement('div'); s.className='menu-sep'; body.appendChild(s); return; }
     const b=document.createElement('button'); b.className='menu-item';
